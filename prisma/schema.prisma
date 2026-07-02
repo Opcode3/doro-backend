@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  MERCHANT
+}
+
+enum BusinessCategory {
+  SALON
+  LAUNDRY
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id                String   @id @default(cuid())
+  role              UserRole
+  firstName         String
+  lastName          String
+  phone             String   @unique
+  email             String?  @unique
+  password          String
+  avatar            String?
+  nombaSubAccountId String?  @unique
+
+  business           Business?
+  bookingsAsCustomer Booking[] @relation("CustomerBookings")
+  reviews            Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Business {
+  id           String           @id @default(cuid())
+  ownerId      String           @unique
+  category     BusinessCategory
+  name         String
+  address      String
+  location     Json // { lat: number, lng: number }
+  openingHours Json?
+  description  String?
+  image        String?
+  isVerified   Boolean          @default(false)
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  services Service[]
+  bookings Booking[] @relation("BusinessBookings")
+
+  reviews Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("businesses")
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  businessId  String
+  name        String
+  description String?
+  duration    Int // minutes
+  price       Decimal
+  isActive    Boolean @default(true)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("services")
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  customerId      String
+  businessId      String
+  serviceId       String
+  scheduledAt     DateTime
+  status          BookingStatus @default(PENDING)
+  paymentStatus   PaymentStatus @default(PENDING)
+  totalAmount     Decimal
+  nombaCheckoutId String?
+
+  customer User     @relation("CustomerBookings", fields: [customerId], references: [id])
+  business Business @relation("BusinessBookings", fields: [businessId], references: [id])
+  service  Service  @relation(fields: [serviceId], references: [id])
+  review   Review?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("bookings")
+}
+
+model Review {
+  id         String  @id @default(cuid())
+  bookingId  String  @unique
+  customerId String
+  businessId String
+  rating     Int // 1-5
+  comment    String?
+
+  customer User     @relation(fields: [customerId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
+  booking  Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("reviews")
+}
