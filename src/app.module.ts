@@ -6,6 +6,9 @@ import { NombaModule } from './integrations/nomba/nomba.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
 import { ServicesModule } from './modules/services/services.module';
 import { VirtualAccountsModule } from './modules/virtual-accounts/virtual-accounts.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
+import { BookingsModule } from './modules/bookings/bookings.module';
 
 @Module({
   imports: [
@@ -19,6 +22,10 @@ import { VirtualAccountsModule } from './modules/virtual-accounts/virtual-accoun
     BusinessesModule,
     ServicesModule,
     VirtualAccountsModule,
+    ReviewsModule,
+    WebhooksModule,
+    BookingsModule,
+    ReviewsModule,
 
     // Other modules will be added here
   ],

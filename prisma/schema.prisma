@@ -159,3 +159,16 @@ model Review {
 
   @@map("reviews")
 }
+
+
+model WebhookLog {
+  id          String   @id @default(cuid())
+  requestId   String   @unique
+  event       String
+  payload     Json
+  status      String   // PROCESSING, SUCCESS, FAILED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("webhook_logs")
+}
