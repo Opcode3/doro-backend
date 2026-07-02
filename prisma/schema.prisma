@@ -51,11 +51,32 @@ model User {
   business           Business?
   bookingsAsCustomer Booking[] @relation("CustomerBookings")
   reviews            Review[]
+  virtualAccount  VirtualAccount?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+model VirtualAccount {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  nombaAccountRef   String   @unique
+  bankAccountNumber String
+  bankAccountName   String
+  bankName          String
+  accountHolderId   String
+  accountName       String
+  currency          String   @default("NGN")
+  bvn               String?
+  expired           Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("virtual_accounts")
 }
 
 model Business {

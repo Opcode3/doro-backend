@@ -10,6 +10,8 @@ import { RegisterDto } from './dto/register.dto';
 import { RegisterBusinessDto } from './dto/register-business.dto';
 import * as bcrypt from 'bcryptjs';
 import { UserRole, BusinessCategory } from '@prisma/client';
+import { empty } from 'rxjs';
+import { VirtualAccountsService } from '../virtual-accounts/virtual-accounts.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +19,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private nombaService: NombaService,
+    private virtualAccountsService: VirtualAccountsService,
   ) {}
 
   //   businessDto?: RegisterBusinessDto
@@ -40,13 +43,41 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const accountRef = `doro_${dto.role.toLowerCase()}_${dto.phone}_`; // Unique reference for Nomba sub-account
-    // Create Nomba Sub-Account
-    const subAccount = await this.nombaService.post('/accounts/sub-accounts', {
-      accountName: `${dto.firstName} ${dto.lastName}`,
-      accountRef: accountRef,
-    });
+    const accountRef = `doro_${dto.role.toLowerCase()}_${dto.phone.replace('+', '')}_${Date.now()}`;
 
+    // const va = await this.nombaService.post('/accounts/virtual', {
+    //   accountRef,
+    //   accountName: `${dto.firstName} ${dto.lastName}`,
+    //   expiryDate: '',
+    //   //   expiryDate: '2026-12-31',
+    //   //   amount: 1000000, // ₦10,000.00 — optional, locks expected amount
+    // });
+    // console.log('Virtual Account Response:', va);
+
+    // Create Nomba Virtual Account
+    let virtualAccountData: any;
+    try {
+      const vaResponse: any = await this.nombaService.post(
+        '/accounts/virtual',
+        {
+          accountRef,
+          accountName: `${dto.firstName} ${dto.lastName}`,
+          // expiryDate: '2026-12-31',     // Uncomment if needed
+          // amount: 1000000,              // Optional lock amount
+        },
+      );
+
+      virtualAccountData = vaResponse.data || vaResponse;
+      console.log('Virtual Account Response:', virtualAccountData);
+    } catch (error) {
+      console.error('Failed to create Nomba Virtual Account:', error);
+      // Decide: fail registration or continue? (Fail is safer for now)
+      throw new BadRequestException(
+        'Failed to create payment account. Please try again.',
+      );
+    }
+
+    // Create user in the database
     const user = await this.prisma.user.create({
       data: {
         role: dto.role,
@@ -60,6 +91,26 @@ export class AuthService {
       },
     });
 
+    // Create Virtual Account Record
+    await this.virtualAccountsService.createForUser(
+      user.id,
+      virtualAccountData,
+    );
+    // await this.prisma.virtualAccount.create({
+    //   data: {
+    //     userId: user.id,
+    //     nombaAccountRef: virtualAccountData.accountRef || accountRef,
+    //     bankAccountNumber: virtualAccountData.bankAccountNumber,
+    //     bankAccountName: virtualAccountData.bankAccountName,
+    //     bankName: virtualAccountData.bankName,
+    //     accountHolderId: virtualAccountData.accountHolderId,
+    //     accountName: virtualAccountData.accountName,
+    //     currency: virtualAccountData.currency || 'NGN',
+    //     bvn: virtualAccountData.bvn,
+    //     expired: virtualAccountData.expired || false,
+    //   },
+    // });
+
     // If Merchant, create Business
     if (dto.role === UserRole.MERCHANT) {
       await this.prisma.business.create({
@@ -69,7 +120,7 @@ export class AuthService {
           category: dto.category || BusinessCategory.LAUNDRY,
           address: dto.address || '',
           location: dto.location || { lat: 0, lng: 0 },
-        //   description: dto.description || '',
+          //   description: dto.description || '',
         },
       });
     }
