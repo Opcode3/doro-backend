@@ -19,16 +19,28 @@ export class AuthService {
     private nombaService: NombaService,
   ) {}
 
-  async register(dto: RegisterDto, businessDto?: RegisterBusinessDto) {
+  //   businessDto?: RegisterBusinessDto
+
+  async register(dto: RegisterDto) {
     const existingUser = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
     });
+
     if (existingUser)
       throw new ConflictException('Phone number already registered');
 
+    if (
+      dto.role === UserRole.MERCHANT &&
+      (!dto.name || !dto.address || !dto.category)
+    ) {
+      throw new BadRequestException(
+        'Business details are required for merchants',
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    const accountRef = `doro_${dto.role.toLowerCase()}_${dto.phone.toLowerCase()}_${Date.now()}`; // Unique reference for Nomba sub-account
+    const accountRef = `doro_${dto.role.toLowerCase()}_${dto.phone}_`; // Unique reference for Nomba sub-account
     // Create Nomba Sub-Account
     const subAccount = await this.nombaService.post('/accounts/sub-accounts', {
       accountName: `${dto.firstName} ${dto.lastName}`,
@@ -49,15 +61,15 @@ export class AuthService {
     });
 
     // If Merchant, create Business
-    if (dto.role === UserRole.MERCHANT && businessDto) {
+    if (dto.role === UserRole.MERCHANT) {
       await this.prisma.business.create({
         data: {
           ownerId: user.id,
-          name: businessDto.name,
-          category: businessDto.category,
-          address: businessDto.address,
-          location: businessDto.location,
-          description: businessDto.description,
+          name: dto.name || '',
+          category: dto.category || BusinessCategory.LAUNDRY,
+          address: dto.address || '',
+          location: dto.location || { lat: 0, lng: 0 },
+        //   description: dto.description || '',
         },
       });
     }

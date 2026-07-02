@@ -77,8 +77,11 @@ export class NombaService {
 
       //   this.logger.log('Nomba access token refreshed successfully');
       this.logger.log(
-        `New Nomba token issued. Expires in ${data.expires_in} seconds.`,
+        `New Nomba token issued. Expires in ${data.expiresAt} seconds.`,
       );
+
+      console.log(data);
+
       return this.accessToken || '';
     } catch (error) {
       this.logger.error('Failed to get Nomba access token', error);
@@ -101,6 +104,9 @@ export class NombaService {
   }
 
   async post<T>(endpoint: string, body?: any): Promise<T> {
+    this.logger.log(
+      `POST request to Nomba: ${endpoint} with body: ${JSON.stringify(body)}`,
+    );
     return this.request<T>('POST', endpoint, body);
   }
 
@@ -139,7 +145,8 @@ export class NombaService {
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
-      this.logger.error(`Nomba ${method} ${endpoint} failed`,
+      this.logger.error(
+        `Nomba ${method} ${endpoint} failed`,
         axiosError.response?.data,
       );
 
@@ -150,7 +157,7 @@ export class NombaService {
       );
     }
   }
-  
+
   async makeRequest<T>(
     endpoint: string,
     method: string = 'GET',

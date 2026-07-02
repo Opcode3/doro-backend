@@ -17,9 +17,9 @@ export class AuthController {
   @Post('register')
   async register(
     @Body() dto: RegisterDto,
-    @Body('business') businessDto?: RegisterBusinessDto,
+    // @Body('business') businessDto?: RegisterBusinessDto,
   ) {
-    return this.authService.register(dto, businessDto);
+    return this.authService.register(dto);
   }
 
   @Post('login')
