@@ -46,9 +46,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(3000);
-  console.log(`🚀 Doro Backend running on: http://localhost:3000/api/v1`);
-  console.log(`📚 Swagger docs: http://localhost:3000/api/docs`);
+  await app.listen(6000);
+  console.log(`🚀 Doro Backend running on: http://localhost:6000/api/v1`);
+  console.log(`📚 Swagger docs: http://localhost:6000/api/docs`);
 }
 
 bootstrap();
