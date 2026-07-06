@@ -25,12 +25,28 @@ export class AuthService {
   //   businessDto?: RegisterBusinessDto
 
   async register(dto: RegisterDto) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { phone: dto.phone },
+    // const existingUser = await this.prisma.user.findUnique({
+    //   where: { phone: dto.phone },
+    // });
+
+    // if (existingUser)
+    //   throw new ConflictException('Phone number already registered');
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ phone: dto.phone }, { email: dto.email }],
+      },
     });
 
-    if (existingUser)
-      throw new ConflictException('Phone number already registered');
+    if (existingUser) {
+      if (existingUser.phone === dto.phone) {
+        throw new ConflictException('Phone number already registered');
+      }
+
+      if (existingUser.email === dto.email) {
+        throw new ConflictException('Email already registered');
+      }
+    }
 
     if (
       dto.role === UserRole.MERCHANT &&
